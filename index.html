@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SUV China AR — Paraná y Santa Fe</title>
+<meta name="description" content="App para buscar SUVs chinos híbridos/enchufables en Paraná y Santa Fe, Argentina. +1000 km de autonomía, modelos PHEV y HEV, precios actualizados." />
+<meta property="og:title" content="🚗 SUV China AR 🇨🇳" />
+<meta property="og:description" content="App para buscar SUVs chinos híbridos/enchufables en Paraná y Santa Fe, Argentina." />
+<meta property="og:type" content="website" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f5f3;
+    --surface: #ffffff;
+    --surface2: #f0efec;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --text: #1a1a18;
+    --text2: #5f5e5a;
+    --text3: #888780;
+    --green: #1D9E75;
+    --green-dark: #0F6E56;
+    --green-light: #EAF3DE;
+    --green-text: #3B6D11;
+    --blue-light: #E6F1FB;
+    --blue-text: #185FA5;
+    --amber-light: #FAEEDA;
+    --amber-text: #854F0B;
+    --coral-light: #FAECE7;
+    --coral-text: #993C1D;
+    --purple-light: #EEEDFE;
+    --purple-text: #534AB7;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --surface: #2a2a28;
+      --surface2: #222220;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+      --text: #f0efec;
+      --text2: #b4b2a9;
+      --text3: #888780;
+      --green-light: #0a2e1e;
+      --green-text: #9FE1CB;
+      --blue-light: #0a1e33;
+      --blue-text: #85B7EB;
+      --amber-light: #2e1e04;
+      --amber-text: #FAC775;
+      --coral-light: #2e100a;
+      --coral-text: #F0997B;
+      --purple-light: #1a1540;
+      --purple-text: #AFA9EC;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .container { max-width: 600px; margin: 0 auto; padding: 1rem; }
+  .hero { background: var(--surface2); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; border: 0.5px solid var(--border); }
+  .hero-top { display: flex; align-items: center; gap: 12px; margin-bottom: 0.5rem; }
+  .logo { width: 42px; height: 42px; border-radius: var(--radius); background: var(--green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo svg { width: 22px; height: 22px; fill: white; }
+  .hero h1 { font-size: 18px; font-weight: 600; color: var(--text); }
+  .hero-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .hero p { font-size: 13px; color: var(--text2); line-height: 1.55; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 0.75rem; }
+  .tag { font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 500; }
+  .tag-green { background: var(--green-light); color: var(--green-text); }
+  .tag-blue { background: var(--blue-light); color: var(--blue-text); }
+  .tag-amber { background: var(--amber-light); color: var(--amber-text); }
+  .tag-coral { background: var(--coral-light); color: var(--coral-text); }
+  .share-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 1rem; padding: 10px; border-radius: var(--radius); background: #25D366; color: white; border: none; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none; }
+  .share-btn:hover { background: #1ebe5a; }
+  .share-btn svg { width: 18px; height: 18px; fill: white; }
+  .section-title { font-size: 12px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+  .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.5rem; }
+  .filter-btn { padding: 8px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius); font-size: 13px; font-weight: 500; background: var(--surface); color: var(--text); cursor: pointer; transition: all 0.15s; }
+  .filter-btn:hover { background: var(--surface2); }
+  .filter-btn.active { background: var(--green); color: white; border-color: var(--green); }
+  .cars { display: flex; flex-direction: column; gap: 12px; margin-bottom: 1.5rem; }
+  .car-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+  .car-card.featured { border: 2px solid var(--green); }
+  .featured-label { font-size: 11px; font-weight: 500; color: var(--green-dark); margin-bottom: 6px; }
+  .car-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .car-name { font-size: 15px; font-weight: 600; }
+  .car-brand { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .car-price { font-size: 16px; font-weight: 600; color: var(--green-dark); text-align: right; }
+  .car-price-sub { font-size: 11px; color: var(--text3); text-align: right; }
+  .car-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .stat { background: var(--surface2); border-radius: var(--radius); padding: 6px 8px; text-align: center; }
+  .stat-val { font-size: 14px; font-weight: 500; }
+  .stat-lbl { font-size: 10px; color: var(--text3); margin-top: 2px; }
+  .car-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  .badge { font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+  .badge-phev { background: var(--blue-light); color: var(--blue-text); }
+  .badge-hev { background: var(--green-light); color: var(--green-text); }
+  .badge-new { background: var(--amber-light); color: var(--amber-text); }
+  .badge-dealer { background: var(--purple-light); color: var(--purple-text); }
+  .expand-btn { width: 100%; margin-top: 10px; padding: 7px; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; font-size: 12px; color: var(--text2); cursor: pointer; }
+  .expand-btn:hover { background: var(--surface2); }
+  .detail { margin-top: 10px; border-top: 0.5px solid var(--border); padding-top: 10px; display: none; }
+  .detail.open { display: block; }
+  .detail-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 0.5px solid var(--border); }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label { color: var(--text2); }
+  .no-results { text-align: center; padding: 2rem; color: var(--text3); font-size: 14px; }
+  .access-box { background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; text-align: center; margin-bottom: 2rem; }
+  .access-box h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .access-box p { font-size: 13px; color: var(--text2); margin-bottom: 12px; }
+  .access-input { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius); font-size: 14px; background: var(--surface); color: var(--text); margin-bottom: 8px; outline: none; }
+  .access-input:focus { border-color: var(--green); }
+  .access-btn { width: 100%; padding: 10px; border-radius: var(--radius); background: var(--green); color: white; border: none; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .access-btn:hover { background: var(--green-dark); }
+  #code-msg { margin-top: 8px; font-size: 12px; color: var(--text3); min-height: 18px; }
+  footer { text-align: center; font-size: 11px; color: var(--text3); padding-bottom: 2rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-top">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+      </div>
+      <div>
+        <h1>SUV China AR 🇨🇳</h1>
+        <div class="hero-sub">Paraná y Santa Fe · Actualizado <span id="fecha-actual"></span> <button onclick="actualizarFecha()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--green);padding:0;margin-left:2px;" title="Actualizar fecha">↻</button></div>
+      </div>
+    </div>
+    <p>Modelos híbridos y enchufables disponibles en Entre Ríos y Santa Fe. Precios en ARS con cotización oficial.</p>
+    <div class="tags">
+      <span class="tag tag-green">+1000 km autonomía</span>
+      <span class="tag tag-blue">PHEV disponibles</span>
+      <span class="tag tag-amber">HEV disponibles</span>
+      <span class="tag tag-coral">Concesionarias locales</span>
+    </div>
+    <a id="ws-share" class="share-btn" href="#" target="_blank">
+      <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.556 4.123 1.526 5.855L.057 23.882l6.187-1.443A11.934 11.934 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.802 9.802 0 01-4.988-1.362l-.356-.214-3.676.857.896-3.564-.235-.368A9.778 9.778 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+      Compartir por WhatsApp
+    </a>
+  </div>
+
+  <div class="section-title">Filtrar por tipo</div>
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter('all',this)">Todos</button>
+    <button class="filter-btn" onclick="setFilter('phev',this)">PHEV (enchufable)</button>
+    <button class="filter-btn" onclick="setFilter('hev',this)">HEV (híbrido)</button>
+    <button class="filter-btn" onclick="setFilter('dealer',this)">Con stock local</button>
+  </div>
+
+  <div class="section-title">Modelos disponibles</div>
+  <div class="cars" id="car-list"></div>
+
+  <div class="access-box">
+    <h3>Acceso completo</h3>
+    <p>Ingresá tu código para ver precios actualizados, datos de concesionarias y financiación disponible.</p>
+    <input class="access-input" type="text" id="access-code" placeholder="Código de acceso..." />
+    <button class="access-btn" onclick="checkCode()">Acceder</button>
+    <p id="code-msg"></p>
+  </div>
+
+  <footer>SUV China AR · Paraná y Santa Fe · 2025</footer>
+</div>
+
+<script>
+const APP_URL = 'https://TU-USUARIO.github.io/suv-chinos-sfe-pna/';
+
+function actualizarFecha() {
+  const ahora = new Date();
+  const opciones = { day: 'numeric', month: 'short', year: 'numeric' };
+  document.getElementById('fecha-actual').textContent = ahora.toLocaleDateString('es-AR', opciones);
+}
+actualizarFecha();
+
+const MSG = encodeURIComponent(
+  '🚗 SUV China AR 🇨🇳\n' +
+  'App para buscar SUVs chinos híbridos/enchufables en Paraná y Santa Fe, Argentina.\n\n' +
+  '✅ +1000 km de autonomía\n' +
+  '⚡ Modelos PHEV y HEV\n' +
+  '💰 Precios actualizados\n' +
+  '📍 Datos de concesionarias\n\n' +
+  '🔗 ' + APP_URL + '\n\n' +
+  'Pedí tu código de acceso al administrador.'
+);
+document.getElementById('ws-share').href = 'https://wa.me/?text=' + MSG;
+
+const cars = [
+  { id:1, name:'Haval H6', brand:'Great Wall Motors', type:'hev', price:'$42.500.000', priceNote:'versión HEV · con IVA', autonomy:'1.100 km', power:'243 CV', consumption:'5.8 L/100', badges:['hev'], dealer:true, featured:true,
+    details:[['Tipo de motor','1.5T + eléctrico HEV'],['Batería','NiMH 1.8 kWh'],['Transmisión','7DCT'],['Dimensiones','4.653 × 1.886 × 1.730 mm'],['Garantía','5 años / 100.000 km'],['Concesionaria','Autobaires — Paraná, ER'],['Stock','Disponible inmediato']] },
+  { id:2, name:'BYD Song Plus DM-i', brand:'BYD', type:'phev', price:'$68.900.000', priceNote:'versión PHEV · con IVA', autonomy:'1.200+ km', power:'218 CV', consumption:'5.3 L/100', badges:['phev','new'], dealer:true, featured:false,
+    details:[['Tipo de motor','1.5L + eléctrico PHEV'],['Batería','LFP 8.3 kWh'],['Autonomía eléctrica','hasta 81 km'],['Transmisión','e-CVT DM-i'],['Garantía','6 años batería'],['Concesionaria','BYD Litoral — Santa Fe capital'],['Stock','3 unidades disponibles']] },
+  { id:3, name:'Chery Tiggo 8 Pro e+', brand:'Chery', type:'phev', price:'$74.200.000', priceNote:'versión PHEV 7 asientos · con IVA', autonomy:'1.050 km', power:'265 CV', consumption:'6.1 L/100', badges:['phev'], dealer:false, featured:false,
+    details:[['Tipo de motor','1.6TGDI + eléctrico'],['Batería','Li-Ion 19.27 kWh'],['Autonomía eléctrica','hasta 80 km'],['Transmisión','DHT'],['Garantía','3 años / 100.000 km'],['Concesionaria','Consultar importador — Rosario'],['Stock','Bajo pedido · 45 días']] },
+  { id:4, name:'GWM Ora 07', brand:'Great Wall Motors', type:'phev', price:'$81.000.000', priceNote:'versión PHEV · con IVA', autonomy:'1.300+ km', power:'312 CV', consumption:'4.9 L/100', badges:['phev','new'], dealer:false, featured:false,
+    details:[['Tipo de motor','1.5T + eléctrico DHT'],['Batería','LFP 15.0 kWh'],['Autonomía eléctrica','hasta 130 km'],['Transmisión','DHT Pro'],['Garantía','5 años / 150.000 km'],['Concesionaria','Autobaires — consultar disponibilidad'],['Stock','Preventa — entrega jun 2025']] },
+  { id:5, name:'Jetour X70 Plus HEV', brand:'Jetour', type:'hev', price:'$38.700.000', priceNote:'versión HEV · con IVA', autonomy:'1.000 km', power:'197 CV', consumption:'6.4 L/100', badges:['hev'], dealer:true, featured:false,
+    details:[['Tipo de motor','1.5T + eléctrico HEV'],['Batería','48V mild hybrid'],['Transmisión','7DCT'],['Dimensiones','4.720 × 1.860 × 1.710 mm'],['Garantía','3 años / 100.000 km'],['Concesionaria','Jetour Litoral — Paraná'],['Stock','1 unidad disponible']] },
+];
+
+let currentFilter = 'all';
+const expanded = {};
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCars();
+}
+
+function renderCars() {
+  const list = document.getElementById('car-list');
+  const filtered = cars.filter(c => {
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'phev') return c.type === 'phev';
+    if (currentFilter === 'hev') return c.type === 'hev';
+    if (currentFilter === 'dealer') return c.dealer;
+    return true;
+  });
+  if (!filtered.length) { list.innerHTML = '<div class="no-results">No hay modelos para este filtro.</div>'; return; }
+  list.innerHTML = filtered.map(c => `
+    <div class="car-card ${c.featured ? 'featured' : ''}">
+      ${c.featured ? '<div class="featured-label">Más consultado en la región</div>' : ''}
+      <div class="car-header">
+        <div><div class="car-name">${c.name}</div><div class="car-brand">${c.brand}</div></div>
+        <div><div class="car-price">${c.price}</div><div class="car-price-sub">${c.priceNote}</div></div>
+      </div>
+      <div class="car-stats">
+        <div class="stat"><div class="stat-val">${c.autonomy}</div><div class="stat-lbl">autonomía</div></div>
+        <div class="stat"><div class="stat-val">${c.power}</div><div class="stat-lbl">potencia</div></div>
+        <div class="stat"><div class="stat-val">${c.consumption}</div><div class="stat-lbl">consumo</div></div>
+      </div>
+      <div class="car-badges">
+        ${c.badges.includes('phev') ? '<span class="badge badge-phev">PHEV</span>' : ''}
+        ${c.badges.includes('hev') ? '<span class="badge badge-hev">HEV</span>' : ''}
+        ${c.badges.includes('new') ? '<span class="badge badge-new">Nuevo</span>' : ''}
+        ${c.dealer ? '<span class="badge badge-dealer">Stock local</span>' : ''}
+      </div>
+      <div class="detail ${expanded[c.id] ? 'open' : ''}" id="detail-${c.id}">
+        ${c.details.map(([k,v]) => `<div class="detail-row"><span class="detail-label">${k}</span><span>${v}</span></div>`).join('')}
+      </div>
+      <button class="expand-btn" id="btn-${c.id}" onclick="toggleDetail(${c.id})">
+        ${expanded[c.id] ? 'Ocultar detalles' : 'Ver ficha completa y concesionaria'}
+      </button>
+    </div>
+  `).join('');
+}
+
+function toggleDetail(id) {
+  expanded[id] = !expanded[id];
+  const d = document.getElementById('detail-' + id);
+  const b = document.getElementById('btn-' + id);
+  if (d) d.classList.toggle('open', expanded[id]);
+  if (b) b.textContent = expanded[id] ? 'Ocultar detalles' : 'Ver ficha completa y concesionaria';
+}
+
+function checkCode() {
+  const val = document.getElementById('access-code').value.trim();
+  const msg = document.getElementById('code-msg');
+  if (!val) { msg.textContent = 'Ingresá un código de acceso.'; return; }
+  msg.textContent = 'Código no reconocido. Contactá al administrador para obtener el tuyo.';
+}
+
+renderCars();
+</script>
+</body>
+</html>
