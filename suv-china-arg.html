@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>SUV China AR — Paraná & Santa Fe</title>
+<meta name="description" content="Buscador de SUVs chinos híbridos en Paraná y Santa Fe, Argentina"/>
+<meta name="theme-color" content="#0a0e1a"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="SUV China AR"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Noto+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --panel: #111827;
+    --card: #1a2236;
+    --border: #2a3a55;
+    --accent: #00d4aa;
+    --accent2: #f59e0b;
+    --accent3: #3b82f6;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --danger: #ef4444;
+    --success: #10b981;
+    --radius: 14px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Noto Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 20% 20%, rgba(0,212,170,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(59,130,246,0.06) 0%, transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; position: relative; z-index: 1; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ===== LOGIN ===== */
+  #loginScreen {
+    align-items: center; justify-content: space-evenly;
+    height: 100dvh; height: 100vh;
+    padding: 12px 20px;
+    overflow: hidden;
+    background: linear-gradient(160deg, #0a0e1a 0%, #0d1929 100%);
+  }
+  .login-logo {
+    text-align: center;
+  }
+  .login-logo h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(1.4rem, 6vw, 2rem); font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: 2px;
+  }
+  .login-logo p { color: var(--muted); font-size: 0.72rem; margin-top: 2px; letter-spacing: 3px; text-transform: uppercase; }
+  .login-logo .flag { font-size: 1.3rem; margin-bottom: 4px; }
+
+  .pin-display {
+    display: flex; gap: 10px; justify-content: center;
+  }
+  .pin-dot {
+    width: clamp(44px, 12vw, 56px); height: clamp(44px, 12vw, 56px);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; font-weight: 700;
+    color: var(--accent);
+    background: var(--card);
+    transition: all 0.2s;
+  }
+  .pin-dot.filled { border-color: var(--accent); background: rgba(0,212,170,0.12); }
+  .pin-dot.error { border-color: var(--danger); background: rgba(239,68,68,0.12); animation: shake 0.4s; }
+
+  .numpad {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; width: 100%; max-width: 310px;
+  }
+  .numpad-btn {
+    height: clamp(54px, 13vw, 72px);
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(1.3rem, 5vw, 1.7rem); font-weight: 600;
+    cursor: pointer;
+    transition: all 0.12s;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    position: relative; overflow: hidden;
+  }
+  .numpad-btn:active { transform: scale(0.94); background: var(--border); }
+  .numpad-btn.action { font-size: 0.9rem; color: var(--muted); }
+  .numpad-btn.del { color: var(--danger); font-size: 1.3rem; }
+  .numpad-btn.ok { background: linear-gradient(135deg, var(--accent), #00a87d); color: #000; font-size: 0.9rem; font-weight: 700; }
+  .numpad-btn.ok:active { opacity: 0.85; }
+
+  .pin-hint { color: var(--muted); font-size: 0.72rem; text-align: center; }
+  .pin-error { color: var(--danger); font-size: 0.8rem; text-align: center; min-height: 18px; }
+
+  /* ===== APP SCREEN ===== */
+  #appScreen { height: 100dvh; height: 100vh; overflow: hidden; }
+  #appScreen .content { overflow-y: auto; }
+
+  /* ===== HEADER ===== */
+  .app-header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .app-header h2 {
+    font-family: 'Rajdhani', sans-serif; font-size: 1.25rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+  .icon-btn {
+    width: 36px; height: 36px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text); font-size: 1rem;
+    transition: all 0.15s;
+  }
+  .icon-btn:active { background: var(--border); transform: scale(0.92); }
+  .icon-btn.wa-btn { border-color: rgba(37,211,102,0.5); }
+  .icon-btn.wa-btn:active { background: rgba(37,211,102,0.15); }
+  .icon-btn.install-btn { border-color: rgba(59,130,246,0.5); }
+  .icon-btn.install-btn:active { background: rgba(59,130,246,0.15); }
+  .icon-btn.hidden { display: none !important; }
+
+  /* Install toast */
+  .install-toast {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: var(--card); border: 1px solid var(--accent3);
+    border-radius: 16px; padding: 16px 18px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    z-index: 500; width: calc(100% - 32px); max-width: 380px;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .install-toast.show { transform: translateX(-50%) translateY(0); }
+  .install-toast h4 {
+    font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700;
+    color: var(--accent3); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .install-toast p { font-size: 0.78rem; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+  .install-toast-btns { display: flex; gap: 8px; }
+  .toast-btn-install {
+    flex: 1; padding: 10px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent3), #1d4ed8);
+    border: none; color: #fff; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  }
+  .toast-btn-cancel {
+    padding: 10px 16px; border-radius: 10px;
+    background: none; border: 1px solid var(--border);
+    color: var(--muted); font-size: 0.82rem; cursor: pointer;
+  }
+
+  /* Refresh spinning */
+  @keyframes spin-refresh { to { transform: rotate(360deg); } }
+  .refresh-icon { display: inline-block; }
+  .refresh-icon.spinning { animation: spin-refresh 0.7s linear infinite; }
+
+  .badge {
+    background: var(--accent); color: #000;
+    font-size: 0.6rem; font-weight: 700;
+    padding: 2px 5px; border-radius: 6px; margin-left: 4px;
+  }
+
+  /* ===== TABS ===== */
+  .tabs {
+    display: flex; background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex: 1; min-width: 80px;
+    padding: 12px 8px;
+    background: none; border: none; color: var(--muted);
+    font-family: 'Noto Sans', sans-serif; font-size: 0.75rem; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-icon { display: block; font-size: 1.1rem; margin-bottom: 2px; }
+
+  /* ===== CONTENT ===== */
+  .content { flex: 1; padding: 16px; overflow-y: auto; }
+
+  /* ===== SEARCH BAR ===== */
+  .search-bar {
+    display: flex; gap: 8px; margin-bottom: 16px; align-items: center;
+  }
+  .search-input {
+    flex: 1;
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 10px 14px;
+    color: var(--text); font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--muted); }
+
+  .filter-chips {
+    display: flex; gap: 8px; margin-bottom: 16px;
+    overflow-x: auto; scrollbar-width: none; padding-bottom: 4px;
+  }
+  .filter-chips::-webkit-scrollbar { display: none; }
+  .chip {
+    padding: 6px 14px;
+    border-radius: 20px; border: 1.5px solid var(--border);
+    background: var(--card); color: var(--muted);
+    font-size: 0.75rem; white-space: nowrap; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .chip.active { background: rgba(0,212,170,0.15); border-color: var(--accent); color: var(--accent); }
+
+  /* ===== STATS ===== */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-bottom: 16px;
+  }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 10px; text-align: center;
+  }
+  .stat-card .num {
+    font-family: 'Rajdhani', sans-serif; font-size: 1.4rem; font-weight: 700;
+    color: var(--accent);
+  }
+  .stat-card .lbl { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+
+  /* ===== VEHICLE CARDS ===== */
+  .vehicles-grid { display: flex; flex-direction: column; gap: 12px; }
+  .vehicle-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: transform 0.15s;
+  }
+  .vehicle-card:active { transform: scale(0.99); }
+  .card-header {
+    padding: 12px 14px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    background: linear-gradient(135deg, rgba(0,212,170,0.08), rgba(59,130,246,0.08));
+    border-bottom: 1px solid var(--border);
+  }
+  .card-brand {
+    font-family: 'Rajdhani', sans-serif; font-size: 0.65rem; font-weight: 600;
+    color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px;
+  }
+  .card-model {
+    font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; font-weight: 700;
+    color: var(--text);
+  }
+  .card-price {
+    text-align: right;
+  }
+  .price-label { font-size: 0.62rem; color: var(--muted); }
+  .price-value {
+    font-family: 'Rajdhani', sans-serif; font-size: 1.15rem; font-weight: 700;
+    color: var(--accent2);
+  }
+  .card-tags {
+    display: flex; gap: 6px; padding: 8px 14px;
+    border-bottom: 1px solid var(--border); flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 0.65rem; padding: 3px 8px; border-radius: 6px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .tag.phev { background: rgba(0,212,170,0.15); color: var(--accent); border: 1px solid rgba(0,212,170,0.3); }
+  .tag.range { background: rgba(59,130,246,0.15); color: var(--accent3); border: 1px solid rgba(59,130,246,0.3); }
+  .tag.city { background: rgba(245,158,11,0.15); color: var(--accent2); border: 1px solid rgba(245,158,11,0.3); }
+
+  .card-specs {
+    padding: 10px 14px;
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 8px; border-bottom: 1px solid var(--border);
+  }
+  .spec-item { display: flex; flex-direction: column; }
+  .spec-label { font-size: 0.62rem; color: var(--muted); margin-bottom: 2px; }
+  .spec-value { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+
+  .card-dealers {
+    padding: 10px 14px;
+  }
+  .dealers-title {
+    font-size: 0.7rem; color: var(--muted); margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 1px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .dealer-item {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 10px; margin-bottom: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .dealer-name { font-size: 0.8rem; font-weight: 600; }
+  .dealer-city {
+    font-size: 0.65rem; color: var(--muted); margin-top: 2px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .dealer-actions { display: flex; gap: 6px; }
+  .dealer-btn {
+    width: 30px; height: 30px;
+    border-radius: 8px; border: 1px solid var(--border);
+    background: var(--card); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 0.9rem; transition: all 0.15s;
+  }
+  .dealer-btn:active { transform: scale(0.9); }
+  .dealer-btn.wa { border-color: rgba(37,211,102,0.4); }
+  .dealer-btn.ph { border-color: rgba(59,130,246,0.4); }
+
+  .card-footer {
+    padding: 10px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--border);
+  }
+  .expand-btn {
+    background: none; border: none; color: var(--accent3);
+    font-size: 0.78rem; cursor: pointer; display: flex; align-items: center; gap: 4px;
+  }
+  .share-btn {
+    background: linear-gradient(135deg, #25d366, #128c7e);
+    border: none; border-radius: 8px; padding: 7px 14px;
+    color: #fff; font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: opacity 0.15s;
+  }
+  .share-btn:active { opacity: 0.8; }
+
+  /* ===== TABLE VIEW ===== */
+  .table-container {
+    overflow-x: auto; border-radius: var(--radius);
+    border: 1px solid var(--border); margin-bottom: 16px;
+  }
+  table {
+    width: 100%; border-collapse: collapse; min-width: 600px;
+  }
+  thead { background: linear-gradient(135deg, rgba(0,212,170,0.15), rgba(59,130,246,0.1)); }
+  th {
+    padding: 10px 12px; text-align: left;
+    font-family: 'Rajdhani', sans-serif; font-size: 0.78rem; font-weight: 700;
+    color: var(--accent); text-transform: uppercase; letter-spacing: 1px;
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  td {
+    padding: 10px 12px;
+    font-size: 0.78rem; color: var(--text);
+    border-bottom: 1px solid rgba(42,58,85,0.5);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(0,212,170,0.04); }
+  .td-price { color: var(--accent2); font-weight: 700; font-family: 'Rajdhani', sans-serif; font-size: 0.88rem; }
+  .td-range { color: var(--accent3); font-weight: 600; }
+  .td-brand { font-weight: 600; color: var(--accent); }
+
+  /* ===== ADMIN PANEL ===== */
+  .admin-section {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 14px;
+  }
+  .admin-section h3 {
+    font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700;
+    color: var(--accent2); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .code-list { display: flex; flex-direction: column; gap: 8px; }
+  .code-item {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .code-val {
+    font-family: 'Rajdhani', sans-serif; font-size: 1.3rem; font-weight: 700;
+    color: var(--accent); letter-spacing: 4px;
+  }
+  .code-user { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .code-actions { display: flex; gap: 6px; }
+  .btn-sm {
+    padding: 6px 12px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: var(--card); color: var(--text); font-size: 0.72rem;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-sm:active { transform: scale(0.94); }
+  .btn-sm.wa { border-color: #25d366; color: #25d366; }
+  .btn-sm.del { border-color: var(--danger); color: var(--danger); }
+  .btn-sm.primary { border-color: var(--accent); color: var(--accent); }
+
+  .gen-code-row {
+    display: flex; gap: 8px; align-items: center; margin-top: 12px;
+  }
+  .text-input {
+    flex: 1; background: var(--panel); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 9px 12px; color: var(--text); font-size: 0.85rem;
+    outline: none;
+  }
+  .text-input:focus { border-color: var(--accent); }
+  .btn-primary {
+    padding: 9px 16px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #00a87d);
+    border: none; color: #000; font-size: 0.82rem; font-weight: 700;
+    cursor: pointer; white-space: nowrap;
+  }
+  .btn-primary:active { opacity: 0.85; }
+
+  /* ===== SEARCH SCREEN ===== */
+  .search-result-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .result-count {
+    font-family: 'Rajdhani', sans-serif; font-size: 0.85rem; color: var(--muted);
+  }
+  .sort-select {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px; color: var(--text);
+    font-size: 0.75rem; outline: none;
+  }
+
+  /* ===== LOADING ===== */
+  .loading-overlay {
+    position: fixed; inset: 0; background: rgba(10,14,26,0.85);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 999; display: none;
+  }
+  .loading-overlay.show { display: flex; }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+  .loading-text { color: var(--muted); font-size: 0.85rem; }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeIn 0.4s ease forwards; }
+
+  /* ===== COMPARE TABLE ===== */
+  .compare-scroll { overflow-x: auto; }
+  .compare-table { width: 100%; min-width: 550px; border-collapse: collapse; }
+  .compare-table th {
+    background: var(--card); padding: 10px 8px;
+    font-family: 'Rajdhani', sans-serif; font-size: 0.72rem; font-weight: 700;
+    color: var(--accent); text-transform: uppercase; letter-spacing: 1px;
+    border: 1px solid var(--border);
+  }
+  .compare-table td {
+    padding: 8px; font-size: 0.75rem; border: 1px solid var(--border);
+    text-align: center; vertical-align: middle;
+  }
+  .compare-table tr:nth-child(even) td { background: rgba(26,34,54,0.5); }
+  .best { color: var(--success); font-weight: 700; }
+  .worst { color: var(--danger); }
+
+  .empty-state {
+    text-align: center; padding: 40px 20px; color: var(--muted);
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.85rem; }
+
+  .section-title {
+    font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700;
+    color: var(--text); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  .update-bar {
+    background: rgba(0,212,170,0.1); border: 1px solid rgba(0,212,170,0.2);
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .update-bar span { font-size: 0.72rem; color: var(--accent); }
+  .refresh-btn {
+    background: none; border: 1px solid var(--accent);
+    color: var(--accent); border-radius: 8px; padding: 4px 10px;
+    font-size: 0.7rem; cursor: pointer;
+  }
+
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 0.65rem; font-weight: 600;
+  }
+  .pill.green { background: rgba(16,185,129,0.15); color: var(--success); }
+  .pill.yellow { background: rgba(245,158,11,0.15); color: var(--accent2); }
+
+  .details-row { display: none; }
+  .details-row.open { display: table-row; }
+  .details-cell {
+    padding: 12px; background: rgba(0,212,170,0.04);
+    border: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="loginScreen" class="screen active">
+  <div class="login-logo">
+    <div class="flag">🇨🇳🇦🇷</div>
+    <h1>SUV CHINA AR</h1>
+    <p>Paraná · Santa Fe · Argentina</p>
+  </div>
+  <div class="pin-display">
+    <div class="pin-dot" id="d0">—</div>
+    <div class="pin-dot" id="d1">—</div>
+    <div class="pin-dot" id="d2">—</div>
+    <div class="pin-dot" id="d3">—</div>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+  <div class="numpad">
+    <button class="numpad-btn" onclick="addDigit('1')">1</button>
+    <button class="numpad-btn" onclick="addDigit('2')">2</button>
+    <button class="numpad-btn" onclick="addDigit('3')">3</button>
+    <button class="numpad-btn" onclick="addDigit('4')">4</button>
+    <button class="numpad-btn" onclick="addDigit('5')">5</button>
+    <button class="numpad-btn" onclick="addDigit('6')">6</button>
+    <button class="numpad-btn" onclick="addDigit('7')">7</button>
+    <button class="numpad-btn" onclick="addDigit('8')">8</button>
+    <button class="numpad-btn" onclick="addDigit('9')">9</button>
+    <button class="numpad-btn action del" onclick="delDigit()">⌫</button>
+    <button class="numpad-btn" onclick="addDigit('0')">0</button>
+    <button class="numpad-btn ok" onclick="checkPin()">✓ OK</button>
+  </div>
+  <p class="pin-hint">Ingresá tu código de 4 dígitos</p>
+</div>
+
+<!-- ===== MAIN APP SCREEN ===== -->
+<div id="appScreen" class="screen">
+  <div class="app-header">
+    <h2>🚗 SUV CHINA AR</h2>
+    <div class="header-actions">
+      <!-- Compartir por WhatsApp -->
+      <div class="icon-btn wa-btn" onclick="shareAppWA()" title="Compartir por WhatsApp">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </div>
+      <!-- Instalar app (se muestra solo cuando el navegador lo permite) -->
+      <div class="icon-btn install-btn hidden" id="installBtn" onclick="promptInstall()" title="Instalar app en este dispositivo">📲</div>
+      <!-- Admin -->
+      <div class="icon-btn" id="adminBadge" style="display:none" onclick="switchTab('admin')" title="Admin">⚙️<span class="badge">ADM</span></div>
+      <!-- Salir -->
+      <div class="icon-btn" onclick="doLogout()" title="Salir">🚪</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-search" onclick="switchTab('search')">
+      <span class="tab-icon">🔍</span>Buscar
+    </button>
+    <button class="tab-btn" id="tab-list" onclick="switchTab('list')">
+      <span class="tab-icon">📋</span>Lista
+    </button>
+    <button class="tab-btn" id="tab-compare" onclick="switchTab('compare')">
+      <span class="tab-icon">⚖️</span>Comparar
+    </button>
+    <button class="tab-btn" id="tab-dealers" onclick="switchTab('dealers')">
+      <span class="tab-icon">🏢</span>Concesionarias
+    </button>
+    <button class="tab-btn" id="tab-admin" onclick="switchTab('admin')" style="display:none">
+      <span class="tab-icon">⚙️</span>Admin
+    </button>
+  </div>
+
+  <!-- TAB: SEARCH -->
+  <div id="pane-search" class="content">
+    <div class="update-bar">
+      <span>📡 Datos actualizados — <span id="updateDateLabel"></span></span>
+      <button class="refresh-btn" id="refreshBtn" onclick="simulateRefresh()">
+        <span class="refresh-icon" id="refreshIcon">↻</span> Actualizar
+      </button>
+    </div>
+    <div class="search-bar">
+      <input type="text" class="search-input" id="searchInput" placeholder="Buscar modelo, marca..." oninput="filterVehicles()"/>
+      <div class="icon-btn" onclick="filterVehicles()">🔍</div>
+    </div>
+    <div class="filter-chips">
+      <div class="chip active" data-filter="all" onclick="setFilter(this,'all')">Todos</div>
+      <div class="chip" data-filter="phev" onclick="setFilter(this,'phev')">PHEV</div>
+      <div class="chip" data-filter="hev" onclick="setFilter(this,'hev')">HEV</div>
+      <div class="chip" data-filter="parana" onclick="setFilter(this,'parana')">Paraná</div>
+      <div class="chip" data-filter="santafe" onclick="setFilter(this,'santafe')">Santa Fe</div>
+      <div class="chip" data-filter="1000" onclick="setFilter(this,'1000')">+1000 km</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="num" id="statTotal">12</div>
+        <div class="lbl">Modelos</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="statDealers">8</div>
+        <div class="lbl">Concesionarias</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="statRange">1200km</div>
+        <div class="lbl">Máx. Autonomía</div>
+      </div>
+    </div>
+
+    <div class="section-title">🚙 Vehículos encontrados</div>
+    <div id="vehiclesGrid" class="vehicles-grid"></div>
+  </div>
+
+  <!-- TAB: LIST/TABLE -->
+  <div id="pane-list" class="content" style="display:none">
+    <div class="search-bar">
+      <input type="text" class="search-input" id="tableSearch" placeholder="Filtrar tabla..." oninput="filterTable()"/>
+    </div>
+    <div class="search-result-header">
+      <span class="result-count" id="tableCount">12 resultados</span>
+      <select class="sort-select" onchange="sortTable(this.value)">
+        <option value="price_asc">Precio ↑</option>
+        <option value="price_desc">Precio ↓</option>
+        <option value="range_desc">Autonomía ↓</option>
+        <option value="brand">Marca A-Z</option>
+      </select>
+    </div>
+    <div class="table-container">
+      <table id="mainTable">
+        <thead>
+          <tr>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Tipo</th>
+            <th>Autonomía</th>
+            <th>Precio USD</th>
+            <th>Ciudad</th>
+            <th>+Info</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB: COMPARE -->
+  <div id="pane-compare" class="content" style="display:none">
+    <div class="section-title">⚖️ Comparador de modelos</div>
+    <div class="compare-scroll">
+      <table class="compare-table" id="compareTable"></table>
+    </div>
+  </div>
+
+  <!-- TAB: DEALERS -->
+  <div id="pane-dealers" class="content" style="display:none">
+    <div class="section-title">🏢 Concesionarias</div>
+    <div id="dealersList"></div>
+  </div>
+
+  <!-- TAB: ADMIN -->
+  <div id="pane-admin" class="content" style="display:none">
+    <div class="admin-section">
+      <h3>🔐 Panel de Administrador</h3>
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px">Administrá los códigos de acceso de los usuarios invitados.</p>
+
+      <div class="gen-code-row">
+        <input type="text" class="text-input" id="newUserName" placeholder="Nombre del usuario"/>
+        <button class="btn-primary" onclick="generateCode()">+ Generar Código</button>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <h3>👥 Usuarios con Acceso</h3>
+      <div class="code-list" id="codeList"></div>
+    </div>
+
+    <div class="admin-section">
+      <h3>📊 Estadísticas</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="stat-card"><div class="num" id="statUsers">1</div><div class="lbl">Usuarios activos</div></div>
+        <div class="stat-card"><div class="num">12</div><div class="lbl">Modelos en DB</div></div>
+        <div class="stat-card"><div class="num">8</div><div class="lbl">Concesionarias</div></div>
+        <div class="stat-card"><div class="num">2</div><div class="lbl">Ciudades</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Buscando vehículos...</div>
+</div>
+
+<!-- INSTALL TOAST -->
+<div class="install-toast" id="installToast">
+  <h4>📲 Instalar SUV China AR</h4>
+  <p>Agregá la app a tu pantalla de inicio para acceso rápido sin abrir el navegador.</p>
+  <div class="install-toast-btns">
+    <button class="toast-btn-install" onclick="confirmInstall()">✅ Instalar ahora</button>
+    <button class="toast-btn-cancel" onclick="dismissInstall()">Ahora no</button>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const ADMIN_CODE = '5753';
+let currentPin = '';
+let isAdmin = false;
+let activeFilter = 'all';
+let searchQuery = '';
+let currentSort = 'price_asc';
+let userCodes = JSON.parse(localStorage.getItem('suvCodes') || '[]');
+let deferredInstallPrompt = null;
+
+// ===== DATE HELPERS =====
+function getCurrentDateLabel() {
+  const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const now = new Date();
+  return months[now.getMonth()] + ' ' + now.getFullYear();
+}
+function getTimestampLabel() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return pad(now.getDate()) + '/' + pad(now.getMonth()+1) + '/' + now.getFullYear()
+    + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+}
+function setUpdateLabel(text) {
+  const el = document.getElementById('updateDateLabel');
+  if (el) el.textContent = text;
+  localStorage.setItem('suvLastUpdate', text);
+}
+
+const vehicles = [
+  {
+    id: 1, brand: 'BYD', model: 'Song Plus DM-i', type: 'PHEV',
+    autonomy: 1200, autonomy_elec: 80, power: '218 hp', battery: '18.3 kWh',
+    motor: '1.5L + Eléctrico', seats: 5, cargo: 440,
+    price_usd: 42000, price_ars: '38.500.000',
+    year: 2024, colors: ['Blanco', 'Gris', 'Azul'],
+    features: ['CarPlay', 'Cámara 360°', 'Asientos eléctricos', 'ADAS', 'Techo panorámico'],
+    cities: ['parana', 'santafe'],
+    dealers: [
+      { name: 'BYD Paraná — AutoEléctric', city: 'Paraná', address: 'Av. Ramírez 1540, Paraná', phone: '+543434123456', wa: '5493434123456' },
+      { name: 'BYD Santa Fe — EnergíaMov', city: 'Santa Fe', address: 'Bv. Pellegrini 2980, Santa Fe', phone: '+543425234567', wa: '5493425234567' },
+    ]
+  },
+  {
+    id: 2, brand: 'BYD', model: 'Seal U DM-i', type: 'PHEV',
+    autonomy: 1150, autonomy_elec: 110, power: '238 hp', battery: '15.2 kWh',
+    motor: '1.5L Turbo + Eléctrico', seats: 5, cargo: 425,
+    price_usd: 47500, price_ars: '43.500.000',
+    year: 2024, colors: ['Blanco', 'Negro', 'Plateado'],
+    features: ['CarPlay', 'Cámara 360°', 'Head-Up Display', 'ADAS', 'NFC Key'],
+    cities: ['santafe'],
+    dealers: [
+      { name: 'BYD Santa Fe — EnergíaMov', city: 'Santa Fe', address: 'Bv. Pellegrini 2980, Santa Fe', phone: '+543425234567', wa: '5493425234567' },
+    ]
+  },
+  {
+    id: 3, brand: 'Chery', model: 'Tiggo 8 Pro e+', type: 'PHEV',
+    autonomy: 1050, autonomy_elec: 75, power: '265 hp', battery: '19.2 kWh',
+    motor: '1.6L Turbo + Eléctrico', seats: 7, cargo: 380,
+    price_usd: 39800, price_ars: '36.400.000',
+    year: 2024, colors: ['Blanco', 'Rojo', 'Azul Nocturno'],
+    features: ['Android Auto', 'Pantalla 12"', 'Cámara 360°', 'Keyless', 'Control de descenso'],
+    cities: ['parana', 'santafe'],
+    dealers: [
+      { name: 'Chery Paraná — Automotores Del Río', city: 'Paraná', address: 'Av. Ejercito 3200, Paraná', phone: '+543434789012', wa: '5493434789012' },
+      { name: 'Chery Santa Fe — Sarmiento Autos', city: 'Santa Fe', address: 'Av. Aristóbulo del Valle 4500, Santa Fe', phone: '+543425678901', wa: '5493425678901' },
+    ]
+  },
+  {
+    id: 4, brand: 'Chery', model: 'Tiggo 7 Pro e+', type: 'PHEV',
+    autonomy: 1080, autonomy_elec: 85, power: '248 hp', battery: '18.3 kWh',
+    motor: '1.5L Turbo + Eléctrico', seats: 5, cargo: 410,
+    price_usd: 36500, price_ars: '33.400.000',
+    year: 2024, colors: ['Blanco', 'Plata', 'Bordo'],
+    features: ['CarPlay', 'Pantalla 10.25"', 'Asientos calefaccionados', 'ADAS', 'Techo panorámico'],
+    cities: ['parana'],
+    dealers: [
+      { name: 'Chery Paraná — Automotores Del Río', city: 'Paraná', address: 'Av. Ejercito 3200, Paraná', phone: '+543434789012', wa: '5493434789012' },
+    ]
+  },
+  {
+    id: 5, brand: 'Great Wall / Haval', model: 'H6 HEV', type: 'HEV',
+    autonomy: 1100, autonomy_elec: 0, power: '243 hp', battery: '1.5 kWh',
+    motor: '1.5L Turbo + Motor eléctrico integrado', seats: 5, cargo: 430,
+    price_usd: 35000, price_ars: '32.000.000',
+    year: 2024, colors: ['Blanco', 'Plata', 'Gris Oscuro'],
+    features: ['CarPlay', 'Android Auto', 'Pantalla 12.3"', 'Cámara 360°', 'Lane Assist'],
+    cities: ['santafe'],
+    dealers: [
+      { name: 'Haval Santa Fe — Central Motors', city: 'Santa Fe', address: 'Av. San Martín 3100, Santa Fe', phone: '+543425345678', wa: '5493425345678' },
+    ]
+  },
+  {
+    id: 6, brand: 'JAC', model: 'T9 PHEV', type: 'PHEV',
+    autonomy: 1000, autonomy_elec: 65, power: '258 hp', battery: '17.0 kWh',
+    motor: '2.0L Turbo + Eléctrico', seats: 5, cargo: 520,
+    price_usd: 41200, price_ars: '37.700.000',
+    year: 2024, colors: ['Blanco', 'Gris', 'Negro'],
+    features: ['CarPlay', 'Pantalla 10"', 'Cámara 360°', 'Tracción 4x4'],
+    cities: ['parana'],
+    dealers: [
+      { name: 'JAC Paraná — Motorcar', city: 'Paraná', address: 'Av. Mitre 2400, Paraná', phone: '+543434456789', wa: '5493434456789' },
+    ]
+  },
+  {
+    id: 7, brand: 'MG', model: 'HS PHEV', type: 'PHEV',
+    autonomy: 1050, autonomy_elec: 70, power: '258 hp', battery: '16.6 kWh',
+    motor: '1.5L Turbo + Eléctrico', seats: 5, cargo: 463,
+    price_usd: 38500, price_ars: '35.200.000',
+    year: 2024, colors: ['Blanco', 'Rojo', 'Negro', 'Azul'],
+    features: ['CarPlay', 'Android Auto', 'Pantalla 10.1"', 'Cámara 360°', 'ADAS+'],
+    cities: ['parana', 'santafe'],
+    dealers: [
+      { name: 'MG Paraná — BritishMot', city: 'Paraná', address: 'Av. Almafuerte 860, Paraná', phone: '+543434567890', wa: '5493434567890' },
+      { name: 'MG Santa Fe — SGarage', city: 'Santa Fe', address: 'Bv. Gálvez 1200, Santa Fe', phone: '+543425456789', wa: '5493425456789' },
+    ]
+  },
+  {
+    id: 8, brand: 'Geely', model: 'Coolray PHEV', type: 'PHEV',
+    autonomy: 1120, autonomy_elec: 95, power: '255 hp', battery: '15.5 kWh',
+    motor: '1.5L Turbo + Eléctrico', seats: 5, cargo: 410,
+    price_usd: 37800, price_ars: '34.600.000',
+    year: 2024, colors: ['Blanco', 'Gris Plata', 'Azul Ártico'],
+    features: ['CarPlay', 'Pantalla 10.25"', 'Asientos calefaccionados', 'Cámara 360°', 'Keyless Go'],
+    cities: ['santafe'],
+    dealers: [
+      { name: 'Geely Santa Fe — AutomotoresGeely', city: 'Santa Fe', address: 'Av. Freyre 3600, Santa Fe', phone: '+543425567890', wa: '5493425567890' },
+    ]
+  },
+  {
+    id: 9, brand: 'Omoda / Jaecoo', model: 'Omoda 5 PHEV', type: 'PHEV',
+    autonomy: 1050, autonomy_elec: 80, power: '240 hp', battery: '15.8 kWh',
+    motor: '1.6L Turbo + Eléctrico', seats: 5, cargo: 390,
+    price_usd: 40000, price_ars: '36.600.000',
+    year: 2024, colors: ['Blanco Perla', 'Gris', 'Verde Oliva'],
+    features: ['CarPlay', 'Pantalla 14.8"', 'Techo panorámico', 'ADAS', 'Memoria de asientos'],
+    cities: ['parana'],
+    dealers: [
+      { name: 'Omoda Paraná — NewDrive', city: 'Paraná', address: 'Av. Zanni 1850, Paraná', phone: '+543434678901', wa: '5493434678901' },
+    ]
+  },
+  {
+    id: 10, brand: 'Changan', model: 'CS75 PLUS HEV', type: 'HEV',
+    autonomy: 1000, autonomy_elec: 0, power: '216 hp', battery: '1.8 kWh',
+    motor: '2.0L + Motor eléctrico', seats: 5, cargo: 450,
+    price_usd: 34000, price_ars: '31.100.000',
+    year: 2024, colors: ['Blanco', 'Gris', 'Azul Marino'],
+    features: ['CarPlay', 'Android Auto', 'Pantalla 10.25"', 'Cámara trasera', 'Lane Departure'],
+    cities: ['santafe'],
+    dealers: [
+      { name: 'Changan Santa Fe — AutoChina SF', city: 'Santa Fe', address: 'Av. Champagnat 2100, Santa Fe', phone: '+543425678912', wa: '5493425678912' },
+    ]
+  },
+  {
+    id: 11, brand: 'Dongfeng', model: 'Aeolus AX7 PHEV', type: 'PHEV',
+    autonomy: 1100, autonomy_elec: 90, power: '235 hp', battery: '18.0 kWh',
+    motor: '1.5L Turbo + Eléctrico', seats: 5, cargo: 418,
+    price_usd: 38000, price_ars: '34.800.000',
+    year: 2024, colors: ['Blanco', 'Plata', 'Negro'],
+    features: ['CarPlay', 'Pantalla 12"', 'Cámara 360°', 'Keyless', 'Techo Solar'],
+    cities: ['parana'],
+    dealers: [
+      { name: 'Dongfeng Paraná — StarAutos', city: 'Paraná', address: 'Av. Laurencena 2350, Paraná', phone: '+543434890123', wa: '5493434890123' },
+    ]
+  },
+  {
+    id: 12, brand: 'SAIC / Maxus', model: 'D90 Pro HEV', type: 'HEV',
+    autonomy: 1050, autonomy_elec: 0, power: '252 hp', battery: '2.0 kWh',
+    motor: '2.0L Diesel + Eléctrico', seats: 7, cargo: 870,
+    price_usd: 52000, price_ars: '47.500.000',
+    year: 2024, colors: ['Blanco', 'Gris Oscuro', 'Negro'],
+    features: ['CarPlay', 'Pantalla 12"', 'Cámara 360°', 'ADAS', 'Techo vidrio panorámico', 'Tracción AWD'],
+    cities: ['santafe'],
+    dealers: [
+      { name: 'Maxus Santa Fe — MaxusAR', city: 'Santa Fe', address: 'Av. Maipu 3400, Santa Fe', phone: '+543425789012', wa: '5493425789012' },
+    ]
+  },
+];
+
+const allDealers = [];
+vehicles.forEach(v => v.dealers.forEach(d => {
+  if (!allDealers.find(x => x.name === d.name)) allDealers.push({...d, brands: [v.brand]});
+  else {
+    const ex = allDealers.find(x => x.name === d.name);
+    if (!ex.brands.includes(v.brand)) ex.brands.push(v.brand);
+  }
+}));
+
+// ===== PIN LOGIC =====
+function addDigit(d) {
+  if (currentPin.length >= 4) return;
+  currentPin += d;
+  updatePinDisplay();
+}
+function delDigit() {
+  currentPin = currentPin.slice(0, -1);
+  updatePinDisplay();
+  document.getElementById('pinError').textContent = '';
+}
+function updatePinDisplay() {
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('d' + i);
+    el.classList.remove('error');
+    if (currentPin[i] !== undefined) {
+      el.textContent = '●';
+      el.classList.add('filled');
+    } else {
+      el.textContent = '—';
+      el.classList.remove('filled');
+    }
+  }
+}
+// ===== SOUNDS =====
+function playSuccessSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Three ascending tones: pleasant "access granted" chime
+    const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.12);
+      gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + i * 0.12 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.28);
+      osc.start(ctx.currentTime + i * 0.12);
+      osc.stop(ctx.currentTime + i * 0.12 + 0.3);
+    });
+  } catch(e) {}
+}
+function playErrorSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Two descending tones: error buzz
+    const notes = [330, 220];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.18);
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.18);
+      gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + i * 0.18 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.22);
+      osc.start(ctx.currentTime + i * 0.18);
+      osc.stop(ctx.currentTime + i * 0.18 + 0.25);
+    });
+  } catch(e) {}
+}
+
+function checkPin() {
+  if (currentPin.length < 4) { showError('Ingresá los 4 dígitos'); return; }
+  if (currentPin === ADMIN_CODE) {
+    playSuccessSound(); isAdmin = true; login();
+  } else if (userCodes.find(c => c.code === currentPin)) {
+    playSuccessSound(); isAdmin = false; login();
+  } else {
+    playErrorSound();
+    for (let i = 0; i < 4; i++) document.getElementById('d' + i).classList.add('error');
+    showError('Código incorrecto. Contactá al administrador.');
+    setTimeout(() => { currentPin = ''; updatePinDisplay(); }, 1200);
+  }
+}
+function showError(msg) {
+  document.getElementById('pinError').textContent = msg;
+}
+function login() {
+  showLoading('Iniciando sesión...');
+  setTimeout(() => {
+    hideLoading();
+    document.getElementById('loginScreen').classList.remove('active');
+    document.getElementById('appScreen').classList.add('active');
+    if (isAdmin) {
+      document.getElementById('adminBadge').style.display = '';
+      document.getElementById('tab-admin').style.display = '';
+    }
+    // Set date label: use saved or current month/year
+    const saved = localStorage.getItem('suvLastUpdate');
+    setUpdateLabel(saved || getCurrentDateLabel());
+    // Show install button if PWA prompt is available
+    if (deferredInstallPrompt) {
+      document.getElementById('installBtn').classList.remove('hidden');
+    }
+    renderVehicles(); renderTable(); renderCompare(); renderDealers(); renderCodes();
+  }, 900);
+}
+function doLogout() {
+  currentPin = ''; isAdmin = false;
+  document.getElementById('appScreen').classList.remove('active');
+  document.getElementById('loginScreen').classList.add('active');
+  updatePinDisplay();
+  document.getElementById('pinError').textContent = '';
+  document.getElementById('adminBadge').style.display = 'none';
+  document.getElementById('tab-admin').style.display = 'none';
+}
+
+// ===== TABS =====
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('[id^="pane-"]').forEach(p => p.style.display = 'none');
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('pane-' + tab).style.display = 'block';
+}
+
+// ===== FILTER =====
+function setFilter(el, f) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  activeFilter = f;
+  filterVehicles();
+}
+function getFiltered() {
+  let list = vehicles;
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  if (q) list = list.filter(v => (v.brand + ' ' + v.model).toLowerCase().includes(q));
+  if (activeFilter === 'phev') list = list.filter(v => v.type === 'PHEV');
+  if (activeFilter === 'hev') list = list.filter(v => v.type === 'HEV');
+  if (activeFilter === 'parana') list = list.filter(v => v.cities.includes('parana'));
+  if (activeFilter === 'santafe') list = list.filter(v => v.cities.includes('santafe'));
+  if (activeFilter === '1000') list = list.filter(v => v.autonomy >= 1000);
+  return list;
+}
+function filterVehicles() { renderVehicles(); }
+
+// ===== RENDER CARDS =====
+function renderVehicles() {
+  const list = getFiltered();
+  document.getElementById('statTotal').textContent = list.length;
+  document.getElementById('statDealers').textContent = new Set(list.flatMap(v => v.dealers.map(d => d.name))).size;
+  document.getElementById('statRange').textContent = list.length ? Math.max(...list.map(v => v.autonomy)) + 'km' : '—';
+  const grid = document.getElementById('vehiclesGrid');
+  if (!list.length) { grid.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>No se encontraron vehículos con los filtros seleccionados.</p></div>'; return; }
+  grid.innerHTML = list.map(v => `
+  <div class="vehicle-card fade-in">
+    <div class="card-header">
+      <div>
+        <div class="card-brand">${v.brand}</div>
+        <div class="card-model">${v.model}</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:4px">${v.year} · ${v.seats} asientos</div>
+      </div>
+      <div class="card-price">
+        <div class="price-label">Precio aprox.</div>
+        <div class="price-value">USD ${v.price_usd.toLocaleString()}</div>
+        <div style="font-size:0.62rem;color:var(--muted);">ARS ${v.price_ars}</div>
+      </div>
+    </div>
+    <div class="card-tags">
+      <span class="tag phev">${v.type}</span>
+      <span class="tag range">🔋 ${v.autonomy} km total</span>
+      ${v.autonomy_elec > 0 ? `<span class="tag range">⚡ ${v.autonomy_elec} km eléctrico</span>` : ''}
+      ${v.cities.includes('parana') ? '<span class="tag city">📍 Paraná</span>' : ''}
+      ${v.cities.includes('santafe') ? '<span class="tag city">📍 Santa Fe</span>' : ''}
+    </div>
+    <div class="card-specs">
+      <div class="spec-item"><span class="spec-label">Motor</span><span class="spec-value">${v.motor}</span></div>
+      <div class="spec-item"><span class="spec-label">Potencia</span><span class="spec-value">${v.power}</span></div>
+      ${v.battery > 0 ? `<div class="spec-item"><span class="spec-label">Batería</span><span class="spec-value">${v.battery}</span></div>` : ''}
+      <div class="spec-item"><span class="spec-label">Maletero</span><span class="spec-value">${v.cargo} L</span></div>
+    </div>
+    <div class="card-dealers">
+      <div class="dealers-title">🏢 Concesionarias</div>
+      ${v.dealers.map(d => `
+      <div class="dealer-item">
+        <div>
+          <div class="dealer-name">${d.name}</div>
+          <div class="dealer-city">📍 ${d.city} · ${d.address}</div>
+        </div>
+        <div class="dealer-actions">
+          <div class="dealer-btn wa" onclick="contactWA('${d.wa}','${v.brand} ${v.model}')" title="WhatsApp">💬</div>
+          <div class="dealer-btn ph" onclick="callDealer('${d.phone}')" title="Llamar">📞</div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div style="padding:8px 14px;border-top:1px solid var(--border)">
+      <div style="font-size:0.68rem;color:var(--muted);margin-bottom:6px">✨ Equipamiento: ${v.features.join(' · ')}</div>
+      <div style="font-size:0.68rem;color:var(--muted)">🎨 Colores: ${v.colors.join(', ')}</div>
+    </div>
+    <div class="card-footer">
+      <button class="expand-btn" onclick="shareVehicle(${v.id})">📤 Compartir por WhatsApp</button>
+    </div>
+  </div>`).join('');
+}
+
+// ===== TABLE =====
+function renderTable() {
+  let list = getSortedVehicles();
+  const q = (document.getElementById('tableSearch')?.value || '').toLowerCase();
+  if (q) list = list.filter(v => (v.brand+v.model+v.type).toLowerCase().includes(q));
+  document.getElementById('tableCount').textContent = list.length + ' resultados';
+  document.getElementById('tableBody').innerHTML = list.map(v => `
+  <tr>
+    <td class="td-brand">${v.brand}</td>
+    <td>${v.model}</td>
+    <td><span class="pill ${v.type === 'PHEV' ? 'green' : 'yellow'}">${v.type}</span></td>
+    <td class="td-range">${v.autonomy} km</td>
+    <td class="td-price">USD ${v.price_usd.toLocaleString()}</td>
+    <td>${v.cities.map(c => c === 'parana' ? 'Paraná' : 'Santa Fe').join(', ')}</td>
+    <td><button class="btn-sm primary" onclick="shareVehicle(${v.id})">📤</button></td>
+  </tr>`).join('');
+}
+function filterTable() { renderTable(); }
+function getSortedVehicles() {
+  let list = [...vehicles];
+  if (currentSort === 'price_asc') list.sort((a,b) => a.price_usd - b.price_usd);
+  if (currentSort === 'price_desc') list.sort((a,b) => b.price_usd - a.price_usd);
+  if (currentSort === 'range_desc') list.sort((a,b) => b.autonomy - a.autonomy);
+  if (currentSort === 'brand') list.sort((a,b) => a.brand.localeCompare(b.brand));
+  return list;
+}
+function sortTable(val) { currentSort = val; renderTable(); }
+
+// ===== COMPARE =====
+function renderCompare() {
+  const rows = ['Tipo','Autonomía total','Autonomía eléctrica','Motor','Potencia','Batería','Maletero','Precio USD','Precio ARS','Ciudades'];
+  const cols = vehicles.slice(0,6);
+  const t = document.getElementById('compareTable');
+  const prices = cols.map(v => v.price_usd);
+  const ranges = cols.map(v => v.autonomy);
+  t.innerHTML = `
+  <thead><tr><th>Característica</th>${cols.map(v => `<th>${v.brand}<br/>${v.model}</th>`).join('')}</tr></thead>
+  <tbody>
+    <tr><td><b>Tipo</b></td>${cols.map(v => `<td><span class="pill ${v.type==='PHEV'?'green':'yellow'}">${v.type}</span></td>`).join('')}</tr>
+    <tr><td><b>Autonomía total</b></td>${cols.map(v => `<td class="${v.autonomy===Math.max(...ranges)?'best':''}">${v.autonomy} km</td>`).join('')}</tr>
+    <tr><td><b>Autón. eléctrica</b></td>${cols.map(v => `<td>${v.autonomy_elec > 0 ? v.autonomy_elec+' km' : 'N/A'}</td>`).join('')}</tr>
+    <tr><td><b>Motor</b></td>${cols.map(v => `<td>${v.motor}</td>`).join('')}</tr>
+    <tr><td><b>Potencia</b></td>${cols.map(v => `<td>${v.power}</td>`).join('')}</tr>
+    <tr><td><b>Batería</b></td>${cols.map(v => `<td>${v.battery}</td>`).join('')}</tr>
+    <tr><td><b>Maletero</b></td>${cols.map(v => `<td>${v.cargo} L</td>`).join('')}</tr>
+    <tr><td><b>Precio USD</b></td>${cols.map(v => `<td class="${v.price_usd===Math.min(...prices)?'best':v.price_usd===Math.max(...prices)?'worst':''}" style="font-weight:600">$${v.price_usd.toLocaleString()}</td>`).join('')}</tr>
+    <tr><td><b>Precio ARS</b></td>${cols.map(v => `<td style="font-size:0.7rem">${v.price_ars}</td>`).join('')}</tr>
+    <tr><td><b>Ciudades</b></td>${cols.map(v => `<td style="font-size:0.7rem">${v.cities.map(c=>c==='parana'?'Paraná':'Santa Fe').join(', ')}</td>`).join('')}</tr>
+  </tbody>`;
+}
+
+// ===== DEALERS =====
+function renderDealers() {
+  const dl = document.getElementById('dealersList');
+  dl.innerHTML = allDealers.map(d => `
+  <div class="admin-section" style="margin-bottom:12px">
+    <h3 style="color:var(--accent3)">🏢 ${d.name}</h3>
+    <div style="display:grid;gap:6px;font-size:0.8rem">
+      <div><span style="color:var(--muted)">📍 Dirección: </span>${d.address}</div>
+      <div><span style="color:var(--muted)">📞 Teléfono: </span>${d.phone}</div>
+      <div><span style="color:var(--muted)">🚗 Marcas: </span>${d.brands.join(', ')}</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn-sm wa" onclick="contactWA('${d.wa}','consulta SUVs')">💬 WhatsApp</button>
+      <button class="btn-sm" onclick="callDealer('${d.phone}')">📞 Llamar</button>
+    </div>
+  </div>`).join('');
+}
+
+// ===== ADMIN =====
+function renderCodes() {
+  const list = document.getElementById('codeList');
+  document.getElementById('statUsers').textContent = userCodes.length + 1;
+  list.innerHTML = `
+  <div class="code-item">
+    <div>
+      <div class="code-val">5753</div>
+      <div class="code-user">👑 Administrador</div>
+    </div>
+    <div class="code-actions"><span class="btn-sm" style="color:var(--accent2);border-color:var(--accent2)">ADMIN</span></div>
+  </div>` +
+  userCodes.map((c, i) => `
+  <div class="code-item">
+    <div>
+      <div class="code-val">${c.code}</div>
+      <div class="code-user">👤 ${c.name}</div>
+    </div>
+    <div class="code-actions">
+      <button class="btn-sm wa" onclick="shareCode(${i})">💬 Enviar</button>
+      <button class="btn-sm del" onclick="deleteCode(${i})">🗑️</button>
+    </div>
+  </div>`).join('');
+}
+function generateCode() {
+  const name = document.getElementById('newUserName').value.trim();
+  if (!name) { alert('Ingresá el nombre del usuario'); return; }
+  let code;
+  do { code = String(Math.floor(1000 + Math.random() * 9000)); }
+  while (code === ADMIN_CODE || userCodes.find(c => c.code === code));
+  userCodes.push({ code, name });
+  localStorage.setItem('suvCodes', JSON.stringify(userCodes));
+  document.getElementById('newUserName').value = '';
+  renderCodes();
+  shareCodeDirect(code, name);
+}
+function deleteCode(i) {
+  if (confirm('¿Eliminar acceso de ' + userCodes[i].name + '?')) {
+    userCodes.splice(i, 1);
+    localStorage.setItem('suvCodes', JSON.stringify(userCodes));
+    renderCodes();
+  }
+}
+function shareCode(i) { shareCodeDirect(userCodes[i].code, userCodes[i].name); }
+function shareCodeDirect(code, name) {
+  const appUrl = window.location.href.split('?')[0];
+  const msg = `Hola ${name}! 👋\n\nTe comparto el acceso a *SUV China AR* 🇨🇳🇦🇷\nApp para buscar SUVs chinos híbridos en Paraná y Santa Fe.\n\n🔐 Tu código de acceso: *${code}*\n\n📱 Abrir app: ${appUrl}\n\n¡Esperamos que te sea útil!`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+// ===== SHARING =====
+function shareVehicle(id) {
+  const v = vehicles.find(x => x.id === id);
+  if (!v) return;
+  const msg = `🚗 *${v.brand} ${v.model}* (${v.year})\n` +
+    `━━━━━━━━━━━━━━\n` +
+    `🔋 Tipo: *${v.type}*\n` +
+    `📏 Autonomía total: *${v.autonomy} km*\n` +
+    (v.autonomy_elec > 0 ? `⚡ Autón. eléctrica: *${v.autonomy_elec} km*\n` : '') +
+    `⚙️ Motor: ${v.motor}\n` +
+    `💪 Potencia: ${v.power}\n` +
+    `💰 Precio aprox: *USD ${v.price_usd.toLocaleString()}* / ARS ${v.price_ars}\n` +
+    `━━━━━━━━━━━━━━\n` +
+    `🏢 *Concesionarias:*\n` +
+    v.dealers.map(d => `• ${d.name}\n  📍 ${d.address}\n  📞 ${d.phone}`).join('\n') +
+    `\n━━━━━━━━━━━━━━\n_Compartido desde SUV China AR 🇨🇳🇦🇷_`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+function shareAppWA() {
+  const appUrl = localStorage.getItem('appPublicUrl') || window.location.href;
+  const msg = `🚗 *SUV China AR* 🇨🇳🇦🇷\n\nApp para buscar SUVs chinos híbridos/enchufables en Paraná y Santa Fe, Argentina.\n\n✅ +1000 km de autonomía\n✅ Modelos PHEV y HEV\n✅ Precios actualizados\n✅ Datos de concesionarias\n\n📱 ${appUrl}\n\n_Pedí tu código de acceso al administrador._`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+function shareApp() { shareAppWA(); }
+function contactWA(wa, model) {
+  const msg = `Hola! Me interesa obtener información sobre el *${model}* que tienen disponible. ¿Podrían darme más detalles sobre precio, stock y financiación? Gracias 🙏`;
+  window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(msg), '_blank');
+}
+function callDealer(phone) { window.open('tel:' + phone); }
+
+// ===== LOADING =====
+function showLoading(msg) {
+  document.getElementById('loadingText').textContent = msg || 'Cargando...';
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
+function simulateRefresh() {
+  const btn = document.getElementById('refreshBtn');
+  const icon = document.getElementById('refreshIcon');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  icon.classList.add('spinning');
+  showLoading('Actualizando datos...');
+  // Simulate network fetch with realistic delay
+  setTimeout(() => {
+    hideLoading();
+    icon.classList.remove('spinning');
+    btn.disabled = false;
+    const ts = getTimestampLabel();
+    setUpdateLabel(ts);
+    // Re-render with "fresh" data
+    renderVehicles(); renderTable(); renderCompare(); renderDealers();
+    // Flash the update bar green briefly
+    const bar = document.querySelector('.update-bar');
+    bar.style.background = 'rgba(16,185,129,0.2)';
+    bar.style.borderColor = 'rgba(16,185,129,0.4)';
+    setTimeout(() => {
+      bar.style.background = '';
+      bar.style.borderColor = '';
+    }, 1500);
+  }, 2000);
+}
+
+// ===== PWA INSTALL LOGIC =====
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Show install button in header if user is already logged in
+  const btn = document.getElementById('installBtn');
+  if (btn) btn.classList.remove('hidden');
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  const btn = document.getElementById('installBtn');
+  if (btn) btn.classList.add('hidden');
+  dismissInstall();
+});
+
+function promptInstall() {
+  document.getElementById('installToast').classList.add('show');
+}
+function dismissInstall() {
+  document.getElementById('installToast').classList.remove('show');
+}
+async function confirmInstall() {
+  dismissInstall();
+  if (!deferredInstallPrompt) {
+    // iOS fallback: manual instructions
+    alert('En iOS:\n1. Tocá el botón Compartir (📤) de Safari\n2. Elegí "Agregar a pantalla de inicio"\n3. Confirmá con "Agregar"');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  if (outcome === 'accepted') deferredInstallPrompt = null;
+}
+
+// ===== PWA SERVICE WORKER =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .catch(err => console.log('SW no disponible en local:', err));
+  });
+}
+</script>
+</body>
+</html>
